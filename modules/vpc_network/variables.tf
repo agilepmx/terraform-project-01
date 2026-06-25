@@ -8,6 +8,7 @@ variable "vpc_name" {
 }
 variable "subnets_map" {
   type = map(object({
+    subnet_type = string
     cidr = string
     az = string
     ipv6_offset = string 
