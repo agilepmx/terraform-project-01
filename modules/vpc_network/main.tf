@@ -51,7 +51,6 @@ resource "aws_route_table_association" "web_subnets_association" {
   for k, v in var.subnets_map : k => v
   if v.subnet_type == "web"
 }
-
   subnet_id = aws_subnet.all_subnets[each.key].id
   route_table_id = aws_route_table.web-rt.id
 }
