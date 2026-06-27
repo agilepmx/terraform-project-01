@@ -1,14 +1,23 @@
+variable "project_name" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
 variable "vpc_cidr" {
   type = string
-  description = "CIDR block for the VPC"
 }
+
 variable "vpc_name" {
   type = string
   description = "Name for the VPC (None display name)"
 }
-variable "subnets_map" {
+
+variable "subnets_data" {
   type = map(object({
-    subnet_type = string
+    public_subnet = bool
     cidr = string
     az = string
     ipv6_offset = string 
