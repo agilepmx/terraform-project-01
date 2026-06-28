@@ -17,7 +17,7 @@ variable "vpc_name" {
 
 variable "subnets_data" {
   type = map(object({
-    public_subnet = bool
+    public = bool
     cidr = string
     az = string
     ipv6_offset = string 

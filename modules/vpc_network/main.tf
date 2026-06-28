@@ -36,7 +36,7 @@ resource "aws_subnet" "this" {
   availability_zone = each.value.az
   ipv6_cidr_block = "${cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, parseint(each.value.ipv6_offset,16))}"
   assign_ipv6_address_on_creation = true
-  #map_public_ip_on_launch = each.value.public_subnet == true ? true : false
+  #map_public_ip_on_launch = each.value.public == true ? true : false
 
   tags = merge(
     local.tags,
@@ -59,20 +59,20 @@ resource "aws_route_table" "public-rt" {
 resource "aws_route" "public_route_ipv4" {
   route_table_id = aws_route_table.public-rt.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_internet_gateway.igw.id
+  gateway_id = aws_internet_gateway.this.id
   depends_on = [aws_internet_gateway.this]
 }
 resource "aws_route" "public_route_ipv6" {
   route_table_id = aws_route_table.public-rt.id
   destination_ipv6_cidr_block = "::/0"
-  gateway_id = aws_internet_gateway.igw.id
+  gateway_id = aws_internet_gateway.this.id
   depends_on = [aws_internet_gateway.this]
 }
 
 resource "aws_route_table_association" "public_subnets_association" {
   for_each = {
   for k, v in var.subnets_data : k => v
-  if v.public_subnet == true
+  if v.public == true
 }
   subnet_id = aws_subnet.this[each.key].id
   route_table_id = aws_route_table.public-rt.id

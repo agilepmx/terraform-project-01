@@ -15,7 +15,7 @@ subnets_data = {
     "sn-app-B"      = { public = false, cidr = "10.16.96.0/20", az = "us-east-1b", ipv6_offset = "06" }
     "sn-web-B"      = { public = true, cidr = "10.16.112.0/20", az = "us-east-1b", ipv6_offset = "07" }
 
-    "sn-reserved-C" = {public = false, cidr = "10.16.128.0/20", az = "us-east-1c", ipv6_offset = "08" }
+    "sn-reserved-C" = { public = false, cidr = "10.16.128.0/20", az = "us-east-1c", ipv6_offset = "08" }
     "sn-db-C"       = { public = false, cidr = "10.16.144.0/20", az = "us-east-1c", ipv6_offset = "09" }
     "sn-app-C"      = { public = false, cidr = "10.16.160.0/20", az = "us-east-1c", ipv6_offset = "0A" }
     "sn-web-C"      = { public = true, cidr = "10.16.176.0/20", az = "us-east-1c", ipv6_offset = "0B" }
