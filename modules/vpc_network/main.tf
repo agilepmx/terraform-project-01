@@ -11,12 +11,12 @@ resource "aws_vpc" "this" {
   assign_generated_ipv6_cidr_block = true
   instance_tenancy = "default"
 
-tags = merge(
-    local.tags,
-    {
-      Name = local.base_name
-    }
-  )
+  tags = merge(
+      local.tags,
+      {
+        Name = local.base_name
+      }
+    )
 }
 resource "aws_internet_gateway" "this" {
     vpc_id = aws_vpc.this.id

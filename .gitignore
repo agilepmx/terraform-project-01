@@ -2,7 +2,6 @@ itmanager_accessKeys.csv
 .terraform/
 *.tfstate
 *.tfstate.*
-.terraform.lock.hcl
 *.tfplan
 *.tfvars
-!terraform.tfvars
+*.csv
