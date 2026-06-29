@@ -4,6 +4,19 @@ locals {
     Environment = var.environment
     ManagedBy = "Terraform"
   }
+
+  public_subnets = {
+    for k, v in var.subnets_data : k => v
+    if v.public == true
+  }
+  private_subnets = {
+    for k, v in var.subnets_data : k => v
+    if v.public == false
+  }
+  az_to_public_subnets = {
+    for k, v in var.subnets_data : v.az => k
+    if v.public == true
+  }
 }
 
 resource "aws_vpc" "this" {
@@ -70,10 +83,55 @@ resource "aws_route" "public_route_ipv6" {
 }
 
 resource "aws_route_table_association" "public_subnets_association" {
-  for_each = {
-  for k, v in var.subnets_data : k => v
-  if v.public == true
-}
+  for_each = local.public_subnets
   subnet_id = aws_subnet.this[each.key].id
   route_table_id = aws_route_table.public-rt.id
+}
+
+resource "aws_eip" "nat-eip" {
+  for_each = local.public_subnets
+  domain = "vpc"
+  tags = merge(
+    local.tags,
+    {
+      Name = "${local.base_name}-nat-eip-${each.value.az}"
+    }
+  )
+}
+
+resource "aws_nat_gateway" "public-nat-gw" {
+  for_each = local.public_subnets
+  allocation_id = aws_eip.nat-eip[each.key].id
+  subnet_id = aws_subnet.this[each.key].id
+
+  tags = merge(
+    local.tags,
+    {
+      Name = "${local.base_name}-nat-gw-${each.value.az}"
+    }
+  )
+}
+
+resource "aws_route_table" "private-rt" {
+  for_each = local.public_subnets
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(
+    local.tags,
+    {
+      Name = "${local.base_name}-${each.value.az}-private-rt"
+    }
+  )
+}
+resource "aws_route" "private_route" {
+  for_each = local.public_subnets
+  route_table_id = aws_route_table.private-rt[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.public-nat-gw[each.key].id
+  depends_on = [aws_nat_gateway.public-nat-gw]
+}
+resource "aws_route_table_association" "private_subnets_association" {
+  for_each = local.private_subnets
+  subnet_id = aws_subnet.this[each.key].id
+  route_table_id = aws_route_table.private-rt[local.az_to_public_subnets[each.value.az]].id
 }

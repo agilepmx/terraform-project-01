@@ -10,7 +10,7 @@ inputs = {
     project_name = "agile"
     environment = "dev"
     vpc_cidr = "10.32.0.0/16"
-    vpc_name = "vpc-01"
+    vpc_name = "vpc01"
 
     subnets_data = {
         "sn-reserved-A" = { public = false, cidr = "10.32.0.0/20", az = "us-east-2a", ipv6_offset = "00" }
