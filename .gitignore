@@ -1,7 +1,10 @@
 itmanager_accessKeys.csv
 .terraform/
+.terragrunt-cache/
 *.tfstate
 *.tfstate.*
 *.tfplan
 *.tfvars
 *.csv
+provider.tf
+backend.tf
