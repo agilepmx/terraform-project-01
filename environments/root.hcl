@@ -11,8 +11,8 @@ locals{
 remote_state {
     backend = "s3"
     config = {
-        bucket = "agile-terraform-state-${local.account_name}-${local.account_id}"
-        key = "${local.aws_region}/${path_relative_to_include()}/terraform.tfstate"
+        bucket = "agile-terraform-state-${local.account_name}-${local.account_id}-${local.aws_region}"
+        key = "${path_relative_to_include()}/terraform.tfstate"
         region = "${local.aws_region}"
         encrypt = true
         use_lockfile  = true
