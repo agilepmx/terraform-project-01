@@ -20,17 +20,17 @@ project-01/
 │   │   ├── account.hcl             # Dev account ID and name
 │   │   └── us-east-1/
 │   │       ├── region.hcl          # Region config
-│   │       └── resources/
-│   │           └── VPC/
-│   │               ├── terragrunt.hcl  # VPC inputs (cidr, subnets, etc.)
-│   │               └── output.tf       # Exposes VPC outputs
+│   │       └── VPC/
+│   │           ├── terragrunt.hcl  # VPC inputs (cidr, subnets, etc.)
+│   │           └── output.tf       # Exposes VPC outputs
 │   ├── Stage/                      # (planned)
 │   └── Prod/                       # (planned)
 └── modules/
     └── vpc_network/
         ├── main.tf                 # VPC, IGW, Subnets, Route Tables, Associations
         ├── variables.tf            # Input variable definitions
-        └── output.tf               # Module outputs
+        ├── output.tf               # Module outputs
+        └── versions.tf             # Terraform and provider version constraints
 ```
 
 ---
@@ -44,12 +44,12 @@ project-01/
 
 ### Subnet Tiers (per AZ)
 
-| Tier       | Access  | Size   | Example CIDR (AZ-A)  |
-|------------|---------|--------|----------------------|
-| reserved   | Private | `/20`  | `10.16.0.0/20`       |
-| db         | Private | `/20`  | `10.16.16.0/20`      |
-| app        | Private | `/20`  | `10.16.32.0/20`      |
-| web        | Public  | `/20`  | `10.16.48.0/20`      |
+| Tier     | Access  | Size  | Example CIDR (AZ-A) |
+|----------|---------|-------|---------------------|
+| reserved | Private | `/20` | `10.16.0.0/20`      |
+| db       | Private | `/20` | `10.16.16.0/20`     |
+| app      | Private | `/20` | `10.16.32.0/20`     |
+| web      | Public  | `/20` | `10.16.48.0/20`     |
 
 Total: **12 subnets** (4 tiers × 3 AZs)
 
@@ -74,7 +74,7 @@ Each resource folder inherits config from parent folders via `find_in_parent_fol
 
 ## State Management
 
-Remote state is stored in S3 per environment:
+Remote state is stored in S3 per environment and is **automatically provisioned by Terragrunt** on first run:
 
 ```
 s3://agile-terraform-state-{account_name}-{account_id}/
@@ -91,7 +91,7 @@ s3://agile-terraform-state-{account_name}-{account_id}/
 Terragrunt assumes the following role before deploying:
 
 ```
-arn:aws:iam::{account_id}:role/TerraformDeployRole
+arn:aws:iam::{account_id}:role/OrganizationAccountAccessRole
 ```
 
 This role must exist in each target AWS account before running any deployments.
@@ -100,11 +100,11 @@ This role must exist in each target AWS account before running any deployments.
 
 ## Prerequisites
 
-| Tool        | Minimum Version |
-|-------------|-----------------|
-| Terraform   | `>= 1.5`        |
-| Terragrunt  | `>= 0.50`       |
-| AWS CLI     | `>= 2.0`        |
+| Tool       | Minimum Version |
+|------------|-----------------|
+| Terraform  | `>= 1.5`        |
+| Terragrunt | `>= 0.50`       |
+| AWS CLI    | `>= 2.0`        |
 
 ---
 
@@ -126,7 +126,7 @@ export AWS_PROFILE=dev
 
 ### 2. Create the deployment IAM role
 
-Ensure `TerraformDeployRole` exists in the target account with sufficient permissions to create VPC resources.
+Ensure `OrganizationAccountAccessRole` exists in the target account with sufficient permissions to create VPC resources.
 
 ---
 
@@ -135,7 +135,7 @@ Ensure `TerraformDeployRole` exists in the target account with sufficient permis
 ### Deploy the VPC (dev)
 
 ```bash
-cd environments/dev/us-east-1/resources/VPC
+cd environments/dev/us-east-1/VPC
 terragrunt init
 terragrunt plan
 terragrunt apply
@@ -144,14 +144,14 @@ terragrunt apply
 ### Deploy all resources in a region
 
 ```bash
-cd environments/dev/us-east-1/resources
+cd environments/dev/us-east-1
 terragrunt run-all apply
 ```
 
 ### Destroy
 
 ```bash
-cd environments/dev/us-east-1/resources/VPC
+cd environments/dev/us-east-1/VPC
 terragrunt destroy
 ```
 
@@ -161,26 +161,26 @@ terragrunt destroy
 
 ### Inputs
 
-| Variable        | Type          | Description                        |
-|-----------------|---------------|------------------------------------|
-| `project_name`  | `string`      | Project name used in resource naming |
-| `environment`   | `string`      | Environment name (dev/stage/prod)  |
-| `vpc_name`      | `string`      | VPC identifier                     |
-| `vpc_cidr`      | `string`      | IPv4 CIDR block for the VPC        |
-| `subnets_data`  | `map(object)` | Subnet definitions (cidr, az, public, ipv6_offset) |
+| Variable       | Type          | Description                                          |
+|----------------|---------------|------------------------------------------------------|
+| `project_name` | `string`      | Project name used in resource naming                 |
+| `environment`  | `string`      | Environment name (dev/stage/prod)                    |
+| `vpc_name`     | `string`      | VPC identifier                                       |
+| `vpc_cidr`     | `string`      | IPv4 CIDR block for the VPC                          |
+| `subnets_data` | `map(object)` | Subnet definitions (cidr, az, public, ipv6_offset)   |
 
 ### Outputs
 
-| Output                  | Description                          |
-|-------------------------|--------------------------------------|
-| `vpc_id`                | VPC ID                               |
-| `vpc_cidr`              | VPC IPv4 CIDR                        |
-| `vpc_ipv6_cidr`         | VPC IPv6 CIDR                        |
-| `igw_id`                | Internet Gateway ID                  |
-| `subnet_ids`            | Map of all subnet name → ID          |
-| `public_subnet_ids`     | Map of public subnet name → ID       |
-| `private_subnet_ids`    | Map of private subnet name → ID      |
-| `public_route_table_id` | Public route table ID                |
+| Output                  | Description                     |
+|-------------------------|---------------------------------|
+| `vpc_id`                | VPC ID                          |
+| `vpc_cidr`              | VPC IPv4 CIDR                   |
+| `vpc_ipv6_cidr`         | VPC IPv6 CIDR                   |
+| `igw_id`                | Internet Gateway ID             |
+| `subnet_ids`            | Map of all subnet name → ID     |
+| `public_subnet_ids`     | Map of public subnet name → ID  |
+| `private_subnet_ids`    | Map of private subnet name → ID |
+| `public_route_table_id` | Public route table ID           |
 
 ---
 
@@ -188,7 +188,7 @@ terragrunt destroy
 
 1. Create the folder structure:
 ```bash
-mkdir -p environments/Stage/us-east-1/resources/VPC
+mkdir -p environments/Stage/us-east-1/VPC
 ```
 
 2. Add `account.hcl`:
@@ -199,7 +199,7 @@ locals {
 }
 ```
 
-3. Add `region.hcl` and copy the `VPC/terragrunt.hcl` with updated CIDRs.
+3. Add `region.hcl` and copy `VPC/terragrunt.hcl` with updated CIDRs.
 
 ---
 
